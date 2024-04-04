@@ -48,10 +48,8 @@ union IPV6_addr {
 };
 
 class IPv6 {
-
-    IPV6_addr address;
-
   public:
+    IPV6_addr address;
     IPv6(string ipstr) {}
     template <typename... T>
     IPv6(T... args) {
@@ -86,26 +84,42 @@ concept IP = is_same_v<T, IPv4> || is_same_v<T, IPv6>;
 template <IP T, int PORT>
 class TCPSocket {
     T ip_addr;
-    struct sockaddr_in servaddr, clientaddr;
+    conditional_t<is_same_v<T, IPv4>, sockaddr_in, sockaddr_in6> servaddr, clientaddr;
+    
     int server_fd = -1, client_fd = -1;
     char buffer[1024];
 
   public:
     TCPSocket(T ip) : ip_addr(ip){
+        // Socket creation based on whether the network protocol is IPv4 or IPv6
+        if (std::is_same_v<T, IPv4>) /* Check if IP is v4 */ {
         servaddr.sin_port = htons(PORT);
         debug("Port set "+to_string(PORT));
-        if (std::is_same_v<T, IPv4>) /* Check if IP is v4 */ {
             servaddr.sin_family = AF_INET; //AF_INET is for IPv4
             servaddr.sin_addr.s_addr = ip_addr.address;
             if((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) /* SOCK_STREAM is for TCP */{
                 throw runtime_error("Socket creation failed");
             }
             debug("Socket created");
-            if(bind(server_fd, (struct sockaddr *)&servaddr, sizeof(servaddr)) == -1){
+        }
+        else if (std::is_same_v<T, IPv6>) /* Check if IP is v6 */ {
+            debug("IPv6 scope entered");
+            return;
+            // servaddr.sin6_family = AF_INET6; //AF_INET6 is for IPv6
+            // servaddr.sin_addr.s_addr = ip_addr.address;
+            // if((server_fd = socket(AF_INET6, SOCK_STREAM, 0)) == -1) /* SOCK_STREAM is for TCP */{
+            //     throw runtime_error("Socket creation failed");
+            // }
+            // debug("Socket created");
+        }
+        else
+            throw invalid_argument("Invalid IP type");
+        
+        //Binding socket to the IP and port
+        if(bind(server_fd, (struct sockaddr *)&servaddr, sizeof(servaddr)) == -1){
                 throw runtime_error("Socket bind failed");
             }
             debug("Socket bound");
-        }
     }
     int accept() {
         int len = sizeof(clientaddr);
@@ -134,10 +148,10 @@ class TCPSocket {
 
 int main() {
 
-    IPv4 ip2("localhost");
+    IPv6 ip2(0x0, 0x0, 0x0, 0x1);
     debug(string(ip2));
     try {
-        TCPSocket<IPv4, 8080> server(ip2);
+        TCPSocket<IPv6, 8080> server(ip2);
         server.listen();
     } catch (const exception &e) {
         cout << e.what() << endl;
