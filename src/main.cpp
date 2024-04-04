@@ -4,13 +4,22 @@
 #include <netinet/in.h>
 #include <string>
 #include <sys/socket.h>
+#include <unistd.h>
 
 using namespace std;
 
+void debug(string str) {
+#if DEBUG == 1
+    cout << str << endl;
+
+#endif
+    return;
+}
+
 class IPv4 {
+public:
     uint32_t address;
 
-  public:
     IPv4(uint32_t address) : address(htonl(address)) {}
 
     IPv4(const string &address) {
@@ -32,18 +41,19 @@ class IPv4 {
         return inet_ntoa(addr);
     }
 };
-typedef union IPV6_addr {
+union IPV6_addr {
     uint8_t bytes[16];
     uint16_t hword[8];
     uint32_t word[4];
-} IPV6_addr;
+};
 
-template <typename... T>
 class IPv6 {
 
     IPV6_addr address;
 
   public:
+    IPv6(string ipstr) {}
+    template <typename... T>
     IPv6(T... args) {
         const int temp[] = {args...};
         int i = 0;
@@ -71,14 +81,65 @@ class IPv6 {
 };
 
 template <typename T>
-class TCPSocket {};
+concept IP = is_same_v<T, IPv4> || is_same_v<T, IPv6>;
+
+template <IP T, int PORT>
+class TCPSocket {
+    T ip_addr;
+    struct sockaddr_in servaddr, clientaddr;
+    int server_fd = -1, client_fd = -1;
+    char buffer[1024];
+
+  public:
+    TCPSocket(T ip) : ip_addr(ip){
+        servaddr.sin_port = htons(PORT);
+        debug("Port set "+to_string(PORT));
+        if (std::is_same_v<T, IPv4>) /* Check if IP is v4 */ {
+            servaddr.sin_family = AF_INET; //AF_INET is for IPv4
+            servaddr.sin_addr.s_addr = ip_addr.address;
+            if((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) /* SOCK_STREAM is for TCP */{
+                throw runtime_error("Socket creation failed");
+            }
+            debug("Socket created");
+            if(bind(server_fd, (struct sockaddr *)&servaddr, sizeof(servaddr)) == -1){
+                throw runtime_error("Socket bind failed");
+            }
+            debug("Socket bound");
+        }
+    }
+    int accept() {
+        int len = sizeof(clientaddr);
+        client_fd = ::accept(server_fd, (struct sockaddr *)&clientaddr, (socklen_t *)&len);
+        if (client_fd < 0) {
+            throw runtime_error("Server accept failed");
+        }
+        debug("Server accepted connection");
+        return client_fd;
+    }
+
+    int listen() {
+        if (::listen(server_fd, 5) < 0) {
+            throw runtime_error("Server listen failed");
+        }
+        debug("Server listening");
+
+        accept();
+
+        read(client_fd, buffer, sizeof(buffer));
+        cout << buffer << endl;
+
+        return 0;
+    }
+};
+
 int main() {
-    IPv4 ip1(0x7F000001);
-    cout << string(ip1) << endl;
 
     IPv4 ip2("localhost");
-    cout << std::hex << ip2 << endl;
-
-    IPv6 ip3(0xfc00, 0xf853, 0xccd, 0xe793, 0x0, 0x0, 0x0, 0x0001);
-    cout << string(ip3) << endl;
+    debug(string(ip2));
+    try {
+        TCPSocket<IPv4, 8080> server(ip2);
+        server.listen();
+    } catch (const exception &e) {
+        cout << e.what() << endl;
+    }
 }
