@@ -5,12 +5,16 @@
 #include <string>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <string.h>
 
 using namespace std;
 
-void debug(string str) {
+template <typename... T>
+void debug(string str, T... args) {
 #if DEBUG == 1
-    cout << str << endl;
+    cout << str << " ";
+    ((cout << args << " "), ...);
+    cout << endl;
 
 #endif
     return;
@@ -92,31 +96,33 @@ class TCPSocket {
   public:
     TCPSocket(T ip) : ip_addr(ip){
         // Socket creation based on whether the network protocol is IPv4 or IPv6
-        if (std::is_same_v<T, IPv4>) /* Check if IP is v4 */ {
-        servaddr.sin_port = htons(PORT);
-        debug("Port set "+to_string(PORT));
+        if constexpr(std::is_same_v<T, IPv4>) /* Check if IP is v4 */ {
             servaddr.sin_family = AF_INET; //AF_INET is for IPv4
             servaddr.sin_addr.s_addr = ip_addr.address;
+            servaddr.sin_port = htons(PORT);
+            debug("Port set "+to_string(PORT));
             if((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) /* SOCK_STREAM is for TCP */{
                 throw runtime_error("Socket creation failed");
             }
             debug("Socket created");
         }
-        else if (std::is_same_v<T, IPv6>) /* Check if IP is v6 */ {
+        else if constexpr(std::is_same_v<T, IPv6>) /* Check if IP is v6 */ {
             debug("IPv6 scope entered");
-            return;
-            // servaddr.sin6_family = AF_INET6; //AF_INET6 is for IPv6
-            // servaddr.sin_addr.s_addr = ip_addr.address;
-            // if((server_fd = socket(AF_INET6, SOCK_STREAM, 0)) == -1) /* SOCK_STREAM is for TCP */{
-            //     throw runtime_error("Socket creation failed");
-            // }
-            // debug("Socket created");
+            servaddr.sin6_family = AF_INET6; //AF_INET6 is for IPv6
+            memcpy(&servaddr.sin6_addr, &ip_addr.address, sizeof(ip_addr.address));
+            
+            servaddr.sin6_port = htons(PORT);
+            if((server_fd = socket(AF_INET6, SOCK_STREAM, 0)) == -1) /* SOCK_STREAM is for TCP */{
+                throw runtime_error("Socket creation failed");
+            }
+            debug("Socket created");
         }
         else
             throw invalid_argument("Invalid IP type");
         
         //Binding socket to the IP and port
         if(bind(server_fd, (struct sockaddr *)&servaddr, sizeof(servaddr)) == -1){
+            perror("Bind failed");
                 throw runtime_error("Socket bind failed");
             }
             debug("Socket bound");
@@ -148,9 +154,10 @@ class TCPSocket {
 
 int main() {
 
-    IPv6 ip2(0x0, 0x0, 0x0, 0x1);
-    debug(string(ip2));
+    IPv6 ip2(0x0, 0x0, 0x0, 0x0);
+    debug(string(ip2), "This is the ipv6 string");
     try {
+        debug("Inside try block for starting server");
         TCPSocket<IPv6, 8080> server(ip2);
         server.listen();
     } catch (const exception &e) {
