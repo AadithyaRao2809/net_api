@@ -9,15 +9,19 @@
 #include <unistd.h>
 
 using namespace std;
+// #define DEBUG
 template <typename... T>
-void debug(T... args) {
+void debug_log(string file, int line, T... args) {
 #ifdef DEBUG
+    clog << "[" << file << ":" << line << "] ";
     ((clog << args << " "), ...);
     clog << endl;
 
 #endif
     return;
 }
+
+#define debug(...) debug_log(__FILE__, __LINE__, __VA_ARGS__)
 
 class IPv4 {
   public:
@@ -86,9 +90,9 @@ concept IP = is_same_v<T, IPv4> || is_same_v<T, IPv6>;
 template <IP T, int PORT>
 class TCPSocket {
     T ip_addr;
-    conditional_t<is_same_v<T, IPv4>, sockaddr_in, sockaddr_in6> servaddr, clientaddr;
 
   protected:
+    conditional_t<is_same_v<T, IPv4>, sockaddr_in, sockaddr_in6> servaddr, clientaddr;
   public:
     int socket_fd = -1;
     TCPSocket(T ip) : ip_addr(ip) {
@@ -121,11 +125,6 @@ class TCPSocket {
             throw invalid_argument("Invalid IP type");
 
         // Binding socket to the IP and port
-        if (bind(socket_fd, (struct sockaddr *)&servaddr, sizeof(servaddr)) == -1) {
-            perror("Bind failed");
-            throw runtime_error("Socket bind failed");
-        }
-        debug("Socket bound");
     }
 
     virtual int read() = 0;
@@ -137,10 +136,18 @@ class TCPServer : public TCPSocket<T, PORT> {
     int client_fd;
     struct sockaddr addr;
     socklen_t addr_len;
-public:
+
+  public:
     char buffer[1024];
 
-    TCPServer(T ip) : TCPSocket<T, PORT>(ip) { memset(buffer, 0, 1024); }
+    TCPServer(T ip) : TCPSocket<T, PORT>(ip) {
+        memset(buffer, 0, 1024);
+        if (bind(this->socket_fd, (struct sockaddr *)&this->servaddr, sizeof(this->servaddr)) == -1) {
+            perror("Bind failed");
+            throw runtime_error("Socket bind failed");
+        }
+        debug("Socket bound");
+    }
     int accept() {
         int err;
         if ((client_fd = ::accept(this->socket_fd, &addr, &addr_len)) < 0) {
@@ -164,18 +171,18 @@ public:
     }
 
     int read() {
-        int err;
-        if ((err = ::recv(client_fd, buffer, 1024, 0)) < 0) {
+        int bytes;
+        if ((bytes = ::recv(client_fd, buffer, 1024, 0)) < 0) {
             debug("Error reading from client");
-            buffer[err] = '\0';
         } else {
-            debug("Read from client");
+            debug("Read from client", bytes, "bytes");
+            buffer[bytes] = '\0';
         }
-        return err;
+        return bytes;
     }
     int write() {
         int err;
-        if ((err = ::send(client_fd, buffer, 1024,0)) < 0) {
+        if ((err = ::send(client_fd, buffer, 1024, 0)) < 0) {
             debug("Error writing to client");
         } else {
             debug("Wrote to client");
@@ -184,23 +191,68 @@ public:
     }
 };
 
+template <IP T, int PORT>
+class TCPClient : TCPSocket<T, PORT> {
+    conditional_t<is_same_v<IPv4, IPv4>, sockaddr_in, sockaddr_in6> addr;
+    socklen_t addr_len;
+
+  public:
+    char buffer[1024];
+
+    TCPClient(T ip) : TCPSocket<T, PORT>(ip) { memset(buffer, 0, 1024); }
+
+    int connect() {
+        int err;
+        if constexpr (is_same_v<T, IPv4>) {
+            addr = static_cast<sockaddr_in>(this->servaddr);
+            addr_len = sizeof(this->servaddr);
+            if ((err = ::connect(this->socket_fd, (struct sockaddr *)&addr, addr_len)) < 0) {
+                debug("Error connecting to server");
+            } else {
+                debug("Connected to server");
+            }
+        } else {
+            // addr = static_cast<sockaddr_in6>(this->servaddr);
+            addr_len = sizeof(this->servaddr);
+        }
+        return err;
+    }
+
+    int read() {
+        int bytes;
+        if ((bytes = ::recv(this->socket_fd, buffer, 1024, 0)) < 0) {
+            debug("Error reading from server");
+        } else {
+            debug("Read from server", bytes, "bytes");
+            buffer[bytes] = '\0';
+        }
+        return bytes;
+    }
+
+    int write() {
+        int bytes;
+        if ((bytes = ::send(this->socket_fd, buffer, 1024, 0)) < 0) {
+            debug("Error writing to server");
+        } else {
+            debug("Wrote to server", bytes, "bytes");
+        }
+        return bytes;
+    }
+};
 
 int main() {
 
     IPv6 ip2(0x0, 0x0, 0x0, 0x0);
     IPv4 ip1("localhost");
     try {
-        TCPServer<IPv6, 8080> server(ip2);
-        server.listen();
-        while (true) {
-            server.accept();
-            while (true) {
-                memset(server.buffer, 0, 1024);
-                server.read();
-                cout << server.buffer << endl;
-                server.write();
-            }
-        }
+        // TCPServer<IPv6, 8080> server(ip2);
+        TCPClient<IPv4, 8080> server(ip1);
+        server.connect();
+        strcpy(server.buffer, "Hello from client\n");
+        cout << server.buffer << endl;
+        server.write();
+        server.read();
+        cout << server.buffer << endl;
     } catch (const exception &e) {
         cout << e.what() << endl;
     }
