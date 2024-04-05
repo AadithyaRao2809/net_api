@@ -10,9 +10,8 @@
 
 using namespace std;
 template <typename... T>
-void debug(string str, T... args) {
+void debug(T... args) {
 #ifdef DEBUG
-    clog << "Line " << __LINE__ << ": " << str << " ";
     ((clog << args << " "), ...);
     clog << endl;
 
@@ -87,11 +86,9 @@ concept IP = is_same_v<T, IPv4> || is_same_v<T, IPv6>;
 template <IP T, int PORT>
 class TCPSocket {
     T ip_addr;
-    conditional_t<is_same_v<T, IPv4>, sockaddr_in, sockaddr_in6> servaddr,
-        clientaddr;
+    conditional_t<is_same_v<T, IPv4>, sockaddr_in, sockaddr_in6> servaddr, clientaddr;
 
-protected:
-
+  protected:
   public:
     int socket_fd = -1;
     TCPSocket(T ip) : ip_addr(ip) {
@@ -100,21 +97,23 @@ protected:
             servaddr.sin_family = AF_INET; // AF_INET is for IPv4
             servaddr.sin_addr.s_addr = ip_addr.address;
             servaddr.sin_port = htons(PORT);
+
             debug("Port set " + to_string(PORT));
-            if ((socket_fd = socket(AF_INET, SOCK_STREAM, 0)) ==
-                -1) /* SOCK_STREAM is for TCP */ {
+            if ((socket_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) /* SOCK_STREAM is for TCP */ {
                 throw runtime_error("Socket creation failed");
             }
             debug("Socket created");
+            int optval = 1;
+            setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, (const void *)&optval, sizeof(int));
+
         } else if constexpr (std::is_same_v<T, IPv6>) /* Check if IP is v6 */ {
             debug("IPv6 scope entered");
             servaddr.sin6_family = AF_INET6; // AF_INET6 is for IPv6
-            memcpy(&servaddr.sin6_addr, &ip_addr.address,
-                   sizeof(ip_addr.address));
-
+            memcpy(&servaddr.sin6_addr, &ip_addr.address, sizeof(ip_addr.address));
             servaddr.sin6_port = htons(PORT);
-            if ((socket_fd = socket(AF_INET6, SOCK_STREAM, 0)) ==
-                -1) /* SOCK_STREAM is for TCP */ {
+
+            debug("Port set", to_string(PORT));
+            if ((socket_fd = socket(AF_INET6, SOCK_STREAM, 0)) == -1) /* SOCK_STREAM is for TCP */ {
                 throw runtime_error("Socket creation failed");
             }
             debug("Socket created");
@@ -122,13 +121,13 @@ protected:
             throw invalid_argument("Invalid IP type");
 
         // Binding socket to the IP and port
-        if (bind(socket_fd, (struct sockaddr *)&servaddr, sizeof(servaddr)) ==
-            -1) {
+        if (bind(socket_fd, (struct sockaddr *)&servaddr, sizeof(servaddr)) == -1) {
             perror("Bind failed");
             throw runtime_error("Socket bind failed");
         }
         debug("Socket bound");
     }
+
     virtual int read() = 0;
     virtual int write() = 0;
 };
@@ -136,33 +135,73 @@ protected:
 template <IP T, int PORT>
 class TCPServer : public TCPSocket<T, PORT> {
     int client_fd;
+    struct sockaddr addr;
+    socklen_t addr_len;
+public:
+    char buffer[1024];
 
-
-  public:
-    TCPServer(T ip) : TCPSocket<T, PORT>(ip) {}
-    
+    TCPServer(T ip) : TCPSocket<T, PORT>(ip) { memset(buffer, 0, 1024); }
     int accept() {
-        
+        int err;
+        if ((client_fd = ::accept(this->socket_fd, &addr, &addr_len)) < 0) {
+            debug("Error Accepting client");
+        } else
+            debug("Accepted client");
+
+        return client_fd;
     }
+
+    string getBuffer() { return string(buffer); }
 
     int listen() {
         int err;
-         if((err = ::listen(this->socket_fd, 5)) < 0) {
+        if ((err = ::listen(this->socket_fd, 5)) < 0) {
             debug("Error Listening");
-         }
+        } else {
+            debug("Listening...");
+        }
+        return err;
     }
 
-    int read() {return 0;}
-    int write() {return 0;}
+    int read() {
+        int err;
+        if ((err = ::recv(client_fd, buffer, 1024, 0)) < 0) {
+            debug("Error reading from client");
+            buffer[err] = '\0';
+        } else {
+            debug("Read from client");
+        }
+        return err;
+    }
+    int write() {
+        int err;
+        if ((err = ::send(client_fd, buffer, 1024,0)) < 0) {
+            debug("Error writing to client");
+        } else {
+            debug("Wrote to client");
+        }
+        return err;
+    }
 };
+
 
 int main() {
 
     IPv6 ip2(0x0, 0x0, 0x0, 0x0);
-    debug(string(ip2), "This is the ipv6 string");
+    IPv4 ip1("localhost");
     try {
-    TCPServer<IPv6, 8080> server(ip2);
-    } catch(const exception &e) {
+        TCPServer<IPv6, 8080> server(ip2);
+        server.listen();
+        while (true) {
+            server.accept();
+            while (true) {
+                memset(server.buffer, 0, 1024);
+                server.read();
+                cout << server.buffer << endl;
+                server.write();
+            }
+        }
+    } catch (const exception &e) {
         cout << e.what() << endl;
     }
     return 0;
