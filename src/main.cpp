@@ -93,6 +93,7 @@ class TCPSocket {
 
   protected:
     conditional_t<is_same_v<T, IPv4>, sockaddr_in, sockaddr_in6> servaddr, clientaddr;
+
   public:
     int socket_fd = -1;
     TCPSocket(T ip) : ip_addr(ip) {
@@ -138,11 +139,11 @@ class TCPServer : public TCPSocket<T, PORT> {
     socklen_t addr_len;
 
   public:
-    char buffer[1024];
+    string buffer;
 
     TCPServer(T ip) : TCPSocket<T, PORT>(ip) {
-        memset(buffer, 0, 1024);
-        if (bind(this->socket_fd, (struct sockaddr *)&this->servaddr, sizeof(this->servaddr)) == -1) {
+        if (bind(this->socket_fd, (struct sockaddr *)&this->servaddr, sizeof(this->servaddr)) ==
+            -1) {
             perror("Bind failed");
             throw runtime_error("Socket bind failed");
         }
@@ -172,7 +173,7 @@ class TCPServer : public TCPSocket<T, PORT> {
 
     int read() {
         int bytes;
-        if ((bytes = ::recv(client_fd, buffer, 1024, 0)) < 0) {
+        if ((bytes = ::recv(client_fd, buffer.data(), buffer.size(), 0)) < 0) {
             debug("Error reading from client");
         } else {
             debug("Read from client", bytes, "bytes");
@@ -182,10 +183,10 @@ class TCPServer : public TCPSocket<T, PORT> {
     }
     int write() {
         int err;
-        if ((err = ::send(client_fd, buffer, 1024, 0)) < 0) {
+        if ((err = ::send(client_fd, buffer.data(), buffer.size(), 0)) < 0) {
             debug("Error writing to client");
         } else {
-            debug("Wrote to client");
+            debug("Wrote to client", err, "bytes");
         }
         return err;
     }
@@ -197,9 +198,9 @@ class TCPClient : TCPSocket<T, PORT> {
     socklen_t addr_len;
 
   public:
-    char buffer[1024];
+    string buffer;
 
-    TCPClient(T ip) : TCPSocket<T, PORT>(ip) { memset(buffer, 0, 1024); }
+    TCPClient(T ip) : TCPSocket<T, PORT>(ip) {}
 
     int connect() {
         int err;
@@ -220,7 +221,7 @@ class TCPClient : TCPSocket<T, PORT> {
 
     int read() {
         int bytes;
-        if ((bytes = ::recv(this->socket_fd, buffer, 1024, 0)) < 0) {
+        if ((bytes = ::recv(this->socket_fd, buffer.c_str(), buffer.size(), 0)) < 0) {
             debug("Error reading from server");
         } else {
             debug("Read from server", bytes, "bytes");
@@ -240,19 +241,37 @@ class TCPClient : TCPSocket<T, PORT> {
     }
 };
 
+template <IP T, int PORT = 80>
+class HTTPServer {
+    TCPServer<T, PORT> server;
+
+  public:
+    string& buffer;
+    HTTPServer(T ip) : server(ip), buffer(server.buffer){}
+    int connect() {
+        server.listen();
+        return server.accept();
+    }
+    int read() { return server.read(); }
+    int write() { return server.write(); }
+};
+
 int main() {
 
-    IPv6 ip2(0x0, 0x0, 0x0, 0x0);
     IPv4 ip1("localhost");
     try {
         // TCPServer<IPv6, 8080> server(ip2);
-        TCPClient<IPv4, 8080> server(ip1);
-        server.connect();
-        strcpy(server.buffer, "Hello from client\n");
-        cout << server.buffer << endl;
-        server.write();
-        server.read();
-        cout << server.buffer << endl;
+        HTTPServer<IPv4, 3000> server(ip1);
+        while (1) {
+            server.connect();
+            server.read();
+            cout << server.buffer << endl;
+            server.buffer =
+                "HTTP/1.1 200 OK\r\nContent-Type: text/html\r\n<!DOCTYPE "
+                "html>\n<html>\n<head>\n<title>Test Page</title>\n</head>\n<body>\n<h1>Hello, "
+                "World!</h1>\n<p>This is a test HTML page.</p>\n</body>\n</html>\n";
+            server.write();
+        }
     } catch (const exception &e) {
         cout << e.what() << endl;
     }
