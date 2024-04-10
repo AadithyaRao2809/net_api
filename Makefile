@@ -1,3 +1,5 @@
+.PHONY: all test run clean
+all: dev test
 dev: 
 	g++ -std=c++20 -g -DDEBUG -o bin/test src/main.cpp 
 release:
