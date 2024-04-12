@@ -23,9 +23,26 @@ class Socket {
 
   protected:
     conditional_t<is_same_v<T, IPv4>, sockaddr_in, sockaddr_in6> servaddr, clientaddr;
+    void createSocket(){
+        if constexpr(is_same_v<T, IPv4>){
+            if((socket_fd = socket(AF_INET, protocol(), 0)) == -1){
+                throw runtime_error("Socket creation failed");
+            }
+            debug("Socket created");
+            int optval = 1;
+            setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, (const void *)&optval, sizeof(int));
+        }
+        else{
+            if((socket_fd = socket(AF_INET6, protocol(), 0)) == -1){
+                throw runtime_error("Socket creation failed");
+            }
+            debug("Socket created");
+            int optval = 1;
+            setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, (const void *)&optval, sizeof(int));
+        }
+    };
 
   public:
-    void createSocket();
 
     int socket_fd = -1;
     virtual int protocol() = 0;

@@ -8,7 +8,7 @@ class UDPSocket : public Socket<T, PORT>{
     public:
     UDPSocket(T ip) : Socket<T, PORT>(ip) {
 
-        // createSocket<T>(ip);
+        this->createSocket();
     }
 
     int protocol() {

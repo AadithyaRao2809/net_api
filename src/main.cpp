@@ -13,9 +13,6 @@
 using namespace std;
 using namespace net;
 
-
-
-
 int main() {
 
     IPv4 ip1("localhost");
