@@ -8,6 +8,7 @@
 
 #include "http.cpp"
 #include "debug.cpp"
+#include "udp.cpp"
 
 using namespace std;
 using namespace net;
@@ -20,8 +21,8 @@ int main() {
     IPv4 ip1("localhost");
     try {
         // TCPServer<IPv6, 8080> server(ip2);
-        HTTPServer<IPv4> server(ip1);
-        server.startServer("./test");
+       UDPServer<IPv4, 8080> server(ip1);
+        
 
     } catch (const exception &e) {
         cout << e.what() << endl;

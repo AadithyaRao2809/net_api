@@ -1,67 +1,23 @@
+#ifndef TCP_F
+#include "sock.cpp"
+#define TCP_F
 
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <string.h>
-#include <string>
-#include <sys/socket.h>
-#include <unistd.h>
 
-#include "debug.cpp"
-#include "ip.cpp"
-
-namespace net {
-using namespace std;
-
-template <typename T>
-concept IP = is_same_v<T, IPv4> || is_same_v<T, IPv6>;
-
+using namespace net;
 template <IP T, int PORT>
-class TCPSocket {
-    T ip_addr;
+class TCPSocket : Socket<T,PORT>{
 
-  protected:
-    conditional_t<is_same_v<T, IPv4>, sockaddr_in, sockaddr_in6> servaddr, clientaddr;
+    public:
+    TCPSocket(T ip) : Socket<T, PORT>(ip) {}
 
-  public:
-    int socket_fd = -1;
-    TCPSocket(T ip) : ip_addr(ip) {
-        // Socket creation based on whether the network protocol is IPv4 or IPv6
-        if constexpr (std::is_same_v<T, IPv4>) /* Check if IP is v4 */ {
-            servaddr.sin_family = AF_INET; // AF_INET is for IPv4
-            servaddr.sin_addr.s_addr = ip_addr.address;
-            servaddr.sin_port = htons(PORT);
-
-            debug("Port set " + to_string(PORT));
-            if ((socket_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) /* SOCK_STREAM is for TCP */ {
-                throw runtime_error("Socket creation failed");
-            }
-            debug("Socket created");
-            int optval = 1;
-            setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, (const void *)&optval, sizeof(int));
-
-        } else if constexpr (std::is_same_v<T, IPv6>) /* Check if IP is v6 */ {
-            debug("IPv6 scope entered");
-            servaddr.sin6_family = AF_INET6; // AF_INET6 is for IPv6
-            memcpy(&servaddr.sin6_addr, &ip_addr.address, sizeof(ip_addr.address));
-            servaddr.sin6_port = htons(PORT);
-
-            debug("Port set", to_string(PORT));
-            if ((socket_fd = socket(AF_INET6, SOCK_STREAM, 0)) == -1) /* SOCK_STREAM is for TCP */ {
-                throw runtime_error("Socket creation failed");
-            }
-            debug("Socket created");
-            int optval = 1;
-            setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, (const void *)&optval, sizeof(int));
-        } else
-            throw invalid_argument("Invalid IP type");
-
-        // Binding socket to the IP and port
+    int protocol() {
+        return SOCK_STREAM;
     }
 
-    int close() { return ::close(socket_fd); }
-    virtual int read() = 0;
-    virtual int write() = 0;
+
 };
+
+
 
 template <IP T, int PORT>
 class TCPServer : public TCPSocket<T, PORT> {
@@ -74,7 +30,7 @@ class TCPServer : public TCPSocket<T, PORT> {
   public:
     string send_str;
     string recv_str;
-    TCPServer(T ip) : TCPSocket<T, PORT>(ip) {
+    TCPServer(T ip) : Socket<T, PORT>(ip) {
         if (bind(this->socket_fd, (struct sockaddr *)&this->servaddr, sizeof(this->servaddr)) ==
             -1) {
             perror("Bind failed");
@@ -128,14 +84,14 @@ class TCPServer : public TCPSocket<T, PORT> {
 };
 
 template <IP T, int PORT>
-class TCPClient : TCPSocket<T, PORT> {
+class TCPClient : Socket<T, PORT> {
     conditional_t<is_same_v<IPv4, IPv4>, sockaddr_in, sockaddr_in6> addr;
     socklen_t addr_len;
 
   public:
     string buffer;
 
-    TCPClient(T ip) : TCPSocket<T, PORT>(ip) {}
+    TCPClient(T ip) : Socket<T, PORT>(ip) {}
 
     int read() {
         int bytes;
@@ -157,4 +113,6 @@ class TCPClient : TCPSocket<T, PORT> {
         return bytes;
     }
 };
-} // namespace net
+
+
+#endif
