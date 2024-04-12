@@ -12,6 +12,9 @@
 
 namespace net {
 
+template <typename T>
+concept Integral = std::is_integral_v<T>;
+
 class IPv4 {
   public:
     uint32_t address;
@@ -46,8 +49,23 @@ union IPV6_addr {
 class IPv6 {
   public:
     IPV6_addr address;
-    IPv6(std::string ipstr) {}
-    template <typename... T>
+
+
+    IPv6(const std::string &address) {
+        if (address == "localhost") {
+            for (int i = 0; i < 16; i++)
+                this->address.bytes[i] = 0;
+            this->address.word[5] = 0;
+            return;
+        }
+        struct in6_addr addr;
+        if (inet_pton(AF_INET6, address.c_str(), &addr) != 1) {
+            throw std::invalid_argument("Invalid IPv6 address");
+        }
+        for (int i = 0; i < 16; i++)
+            this->address.bytes[i] = addr.s6_addr[i];
+    }
+    template <Integral... T>
     IPv6(T... args) {
         const int temp[] = {args...};
         int i = 0;
@@ -63,7 +81,6 @@ class IPv6 {
         } else
             throw std::invalid_argument("Invalid IPv6 address");
     }
-
     operator std::string() const {
         char str[INET6_ADDRSTRLEN];
         if (inet_ntop(AF_INET6, &address, str, INET6_ADDRSTRLEN)) {

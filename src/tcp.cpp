@@ -50,6 +50,8 @@ class TCPSocket {
                 throw runtime_error("Socket creation failed");
             }
             debug("Socket created");
+            int optval = 1;
+            setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, (const void *)&optval, sizeof(int));
         } else
             throw invalid_argument("Invalid IP type");
 
@@ -105,10 +107,12 @@ class TCPServer : public TCPSocket<T, PORT> {
 
     int read() {
         int bytes;
-        if ((bytes = ::recv(client_fd, recv_str.data(), recv_str.size(), 0)) < 0) {
+        char temp[1024];
+        if ((bytes = ::recv(client_fd, temp, 1024, 0)) < 0) {
             debug("Error reading from client");
         } else {
-            debug("Read from client", bytes, "bytes");
+            recv_str = temp;
+            debug("Read from client", bytes);
         }
         return bytes;
     }
