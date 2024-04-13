@@ -28,14 +28,21 @@ class UDPServer : public UDPSocket<T, PORT> {
 
     // recvfrom() 
     int read() {
-        char buffer[1024];
-        int buflen = 1024;
-        int n = ::recvfrom(this->socket_fd, buffer, buflen, 0, &client_addr, &client_addr_len);
-        recv_str = string(buffer,n);
+        recv_str.resize(1024);
+        int n = ::recvfrom(this->socket_fd, recv_str.data(), recv_str.size(), 0, &client_addr, &client_addr_len);
+        debug("Reading from server");
+        if(n>0) recv_str.resize(n);
         return n;
     }
-    int write() {
-        return 0;
+    int write(string response) {
+        int n = ::sendto(this->socket_fd, response.data(), response.size(), 0, &client_addr, client_addr_len);
+        debug("Writing to client");
+        return n;
+    }
+    int write(){
+        int n = ::sendto(this->socket_fd, send_str.data(), send_str.size(), 0, &client_addr, client_addr_len);
+        debug("Writing to client");
+        return n;
     }
 
     public:
@@ -51,8 +58,7 @@ class UDPServer : public UDPSocket<T, PORT> {
     while(1) {
         debug("Waiting for client");
         int n = read();
-        buffer[n] = '\0';
-        debug("Client: " + string(buffer));
+        debug("Client: " + recv_str);
 
         if (client_addr.sa_family == AF_INET)
          client_addrin_ptr = (struct sockaddr_in *)&client_addr;
@@ -62,3 +68,39 @@ class UDPServer : public UDPSocket<T, PORT> {
     }
 
    };
+
+template <IP T, int PORT>
+class UDPClient : UDPSocket<T, PORT>{
+
+    struct sockaddr server_addr;
+    socklen_t server_addr_len;
+    string send_str;
+    string recv_str;
+
+    public:
+
+    int read(){
+        recv_str.resize(1024);
+        debug("Reading from server");
+        int n = ::recvfrom(this->socket_fd, recv_str.data(), recv_str.size(), 0, &server_addr, &server_addr_len);
+        if(n>0) recv_str.resize(n);
+        return n;
+    }
+    int write(string response){
+        debug("Response: " + response);
+        int n = ::sendto(this->socket_fd, response.data(), response.size(), 0, &server_addr, server_addr_len);
+        if(n < 0) {
+            debug("Error writing to server");
+            return -1;
+        }
+        debug("Writing to server");
+        return n;
+    }
+    int write(){
+        int n = ::sendto(this->socket_fd, send_str.data(), send_str.size(), 0, &server_addr, server_addr_len);
+        debug("Writing to server");
+        return n;
+    }
+    UDPClient(T ip) : UDPSocket<T, PORT>(ip) {}
+
+};
