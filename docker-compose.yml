@@ -1,0 +1,36 @@
+services:
+  server:
+    image: alpine:latest
+    container_name: server
+    networks:
+      - my-network
+    volumes:
+      - type: bind
+        source: "./"
+        target: /data
+    tty: true
+
+  client1:
+    image: alpine:latest
+    container_name: client1
+    networks:
+      - my-network
+    volumes:
+      - type: bind
+        source: "./"
+        target: /data
+    tty: true
+
+  client2:
+    image: alpine:latest
+    container_name: client2
+    networks:
+      - my-network
+    volumes:
+      - type: bind
+        source: "./"
+        target: /data
+    tty: true
+
+networks:
+  my-network:

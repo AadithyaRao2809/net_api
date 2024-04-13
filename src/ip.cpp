@@ -18,7 +18,10 @@ concept Integral = std::is_integral_v<T>;
 class IPv4 {
   public:
     uint32_t address;
-
+    IPv4(){
+        this->address = htonl(INADDR_ANY);
+        return;
+    }
     IPv4(uint32_t address) : address(htonl(address)) {}
 
     IPv4(const std::string &address) {

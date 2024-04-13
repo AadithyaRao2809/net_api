@@ -1,4 +1,5 @@
 #include "sock.cpp"
+#include <iterator>
 
 
 using namespace net;
@@ -22,11 +23,12 @@ class UDPServer : public UDPSocket<T, PORT> {
     char buffer[1024];
     int buflen = 1024;
     struct sockaddr client_addr;
+    struct sockaddr_in *client_addrin_ptr;
     socklen_t client_addr_len;
 
     // recvfrom() 
     int read() {
-        return ::recvfrom(this->socket_fd, buffer, buflen, MSG_WAITALL, &client_addr, &client_addr_len);
+        return ::recvfrom(this->socket_fd, buffer, buflen, 0, &client_addr, &client_addr_len);
     }
     int write() {
         return 0;
@@ -43,10 +45,15 @@ class UDPServer : public UDPSocket<T, PORT> {
         debug("Socket bound");
 
     while(1) {
+        debug("Waiting for client");
         int n = read();
         buffer[n] = '\0';
         debug("Client: " + string(buffer));
-        
+
+        if (client_addr.sa_family == AF_INET)
+         client_addrin_ptr = (struct sockaddr_in *)&client_addr;
+         char *ip = inet_ntoa(client_addrin_ptr->sin_addr);
+         std::cout << "Client IP Address is: " << ip << std::endl;
         }
     }
 

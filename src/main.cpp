@@ -15,7 +15,7 @@ using namespace net;
 
 int main() {
 
-    IPv4 ip1("localhost");
+    IPv4 ip1;
     try {
         // TCPServer<IPv6, 8080> server(ip2);
        UDPServer<IPv4, 8080> server(ip1);
