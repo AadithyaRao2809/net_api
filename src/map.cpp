@@ -1,6 +1,7 @@
 #ifndef MAP_F
 
 #define MAP_F
+#include "debug.cpp"
 #include <bits/stdc++.h>
 #include <stdexcept>
 
@@ -68,7 +69,7 @@ class UnorderedMap {
     }
 
     void insert(K key, V value) {
-        int index = hash(key);
+        int index = std::hash<K>{}(key) % num_buckets;
         Node<K, V> *node = buckets[index];
         while (node) {
             if (node->key == key) {
@@ -109,7 +110,7 @@ class UnorderedMap {
         return all_elements;
     }
     V operator[](K key) {
-        int index = hash(key);
+        int index = std::hash<K>{}(key) % num_buckets;
         Node<K, V> *node = buckets[index];
         while (node) {
             if (node->key == key) {
@@ -117,11 +118,12 @@ class UnorderedMap {
             }
             node = node->next;
         }
+        debug("Key not found");
         throw std::runtime_error("Key not found");
     }
 
     void erase(K key) {
-        int index = hash(key);
+        int index = std::hash<K>{}(key) % num_buckets;
         Node<K, V> *node = buckets[index];
         if (node && node->key == key) {
             buckets[index] = node->next;
@@ -181,15 +183,19 @@ class UnorderedMap<std::string, V> {
     }
 
   public:
-    UnorderedMap(int num_buckets = 16) : num_buckets(num_buckets), size(0) {
+    UnorderedMap(int num_buckets = 32) : num_buckets(num_buckets), size(0) {
         buckets = new Node<std::string, V> *[num_buckets];
+        for (int i = 0; i < num_buckets; ++i) {
+            buckets[i] = nullptr;
+        }
     }
 
     ~UnorderedMap() {
         for (int i = 0; i < num_buckets; ++i) {
             Node<std::string, V> *node = buckets[i];
             while (node) {
-                Node<std::string, V> *next_node = node->next;
+                Node<std::string, V> *next_node;
+                next_node = node->next;
                 delete node;
                 node = next_node;
             }
@@ -198,7 +204,7 @@ class UnorderedMap<std::string, V> {
     }
 
     void insert(std::string key, V value) {
-        int index = hash(key);
+        int index = std::hash<std::string>{}(key) % num_buckets;
         Node<std::string, V> *node = buckets[index];
         while (node) {
             if (node->key == key) {
@@ -239,7 +245,7 @@ class UnorderedMap<std::string, V> {
         return all_elements;
     }
     V operator[](std::string key) {
-        int index = hash(key);
+        int index = std::hash<std::string>{}(key) % num_buckets;
         Node<std::string, V> *node = buckets[index];
         while (node) {
             if (node->key == key) {
@@ -247,11 +253,25 @@ class UnorderedMap<std::string, V> {
             }
             node = node->next;
         }
-        throw std::runtime_error("Key not found");
+        debug("Key not found");
+        return V();
+        // throw std::runtime_error("Key not found");
     }
 
+    void clear() {
+        for (int i = 0; i < num_buckets; ++i) {
+            Node<std::string, V> *node = buckets[i];
+            while (node) {
+                Node<std::string, V> *next_node = node->next;
+                delete node;
+                node = next_node;
+            }
+            buckets[i] = nullptr;
+        }
+        size = 0;
+    }
     void erase(std::string key) {
-        int index = hash(key);
+        int index = std::hash<std::string>{}(key) % num_buckets;
         Node<std::string, V> *node = buckets[index];
         if (node && node->key == key) {
             buckets[index] = node->next;
