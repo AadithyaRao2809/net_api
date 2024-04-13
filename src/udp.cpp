@@ -20,15 +20,19 @@ class UDPSocket : public Socket<T, PORT>{
 template <IP T, int PORT>
 class UDPServer : public UDPSocket<T, PORT> {
 
-    char buffer[1024];
-    int buflen = 1024;
+    string send_str;
+    string recv_str;
     struct sockaddr client_addr;
     struct sockaddr_in *client_addrin_ptr;
     socklen_t client_addr_len;
 
     // recvfrom() 
     int read() {
-        return ::recvfrom(this->socket_fd, buffer, buflen, 0, &client_addr, &client_addr_len);
+        char buffer[1024];
+        int buflen = 1024;
+        int n = ::recvfrom(this->socket_fd, buffer, buflen, 0, &client_addr, &client_addr_len);
+        recv_str = string(buffer,n);
+        return n;
     }
     int write() {
         return 0;
