@@ -72,6 +72,15 @@ class TCPServer : public TCPSocket<T, PORT> {
         }
         return bytes;
     }
+    int write(string response) {
+        int err;
+        if ((err = ::send(client_fd, response.data(), response.size(), 0)) < 0) {
+            debug("Error writing to client");
+        } else {
+            debug("Wrote to client", err, "bytes");
+        }
+        return err;
+    }
     int write() {
         int err;
         if ((err = ::send(client_fd, send_str.data(), send_str.size(), 0)) < 0) {
