@@ -11,6 +11,7 @@
 
 #include "debug.cpp"
 #include "tcp.cpp"
+#include "map.cpp"
 
 namespace net {
 template <IP T, int PORT = 80>
@@ -21,9 +22,9 @@ class HTTPServer {
     string res_header;
     string res_body;
     // FIX: Remove std implementation
-    std::unordered_map<string, string> res_headers;
-    std::unordered_map<string, string> req_headers;
-    std::unordered_map<string,void(*)()> routes;
+    UnorderedMap<string, string> res_headers;
+    UnorderedMap<string, string> req_headers;
+    UnorderedMap<string,void(*)()> routes;
 
   public:
     HTTPServer(T ip) : server(ip) {}
@@ -53,10 +54,10 @@ class HTTPServer {
         res_headers["Content-Length"] = to_string(content.length());
         res_header = res_headers["ver"];
 
-        for (auto &i : res_headers) {
-            if (i.first == "ver")
-                continue;
-            res_header += i.first + ": " + i.second + "\r\n";
+        Node<string, string> *temp = res_headers.getElements();
+        while (temp != nullptr) {
+            res_header += temp->key + ": " + temp->value + "\r\n";
+            temp = temp->next;
         }
         res_header += "\r\n";
         this->res_body = content;
@@ -68,8 +69,8 @@ class HTTPServer {
         return 0;
     }
 
-std::unordered_map<std::string, std::string> parseHeader(const std::string& header) {
-    std::unordered_map<std::string, std::string> headers;
+UnorderedMap<std::string, std::string> parseHeader(const std::string& header) {
+    UnorderedMap<std::string, std::string> headers;
 
     size_t pos = 0;
     // Find the end of the first line
@@ -134,7 +135,7 @@ std::unordered_map<std::string, std::string> parseHeader(const std::string& head
     }
     return headers;
 }
-    unordered_map<string, string> parseHeader() {
+    UnorderedMap<string, string> parseHeader() {
         return parseHeader(server.recv_str);
     }
 
@@ -159,9 +160,6 @@ std::unordered_map<std::string, std::string> parseHeader(const std::string& head
             accept();
             read();
             auto headers = parseHeader();
-            for (auto &i : headers) {
-                debug(i.first, i.second);
-            }
             if(headers["Path"] == "/") {
                 headers["Path"] = "/index.html";
             }

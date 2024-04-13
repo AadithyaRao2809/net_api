@@ -15,10 +15,10 @@ using namespace net;
 
 int main() {
 
-    IPv4 ip1;
+    IPv4 ip1("localhost");
     try {
-        // TCPServer<IPv6, 8080> server(ip2);
-       UDPServer<IPv4, 8080> server(ip1);
+        HTTPServer<IPv4, 8080> server(ip1);
+        server.startServer("./test");
         
 
     } catch (const exception &e) {
