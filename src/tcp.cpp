@@ -5,10 +5,10 @@
 
 using namespace net;
 template <IP T, int PORT>
-class TCPSocket : Socket<T,PORT>{
+class TCPSocket :public Socket<T,PORT>{
 
     public:
-    TCPSocket(T ip) : Socket<T, PORT>(ip) {}
+    TCPSocket(T ip) : Socket<T, PORT>(ip) {this->createSocket();}
 
     int protocol() {
         return SOCK_STREAM;
@@ -30,7 +30,7 @@ class TCPServer : public TCPSocket<T, PORT> {
   public:
     string send_str;
     string recv_str;
-    TCPServer(T ip) : Socket<T, PORT>(ip) {
+    TCPServer(T ip) : TCPSocket<T, PORT>(ip) {
         if (bind(this->socket_fd, (struct sockaddr *)&this->servaddr, sizeof(this->servaddr)) ==
             -1) {
             perror("Bind failed");
@@ -90,10 +90,19 @@ class TCPServer : public TCPSocket<T, PORT> {
         }
         return err;
     }
+    int close() {
+        int err;
+        if ((err = ::close(client_fd)) < 0) {
+            debug("Error closing client");
+        } else {
+            debug("Closed client");
+        }
+        return err;
+    }
 };
 
 template <IP T, int PORT>
-class TCPClient : Socket<T, PORT> {
+class TCPClient : public TCPSocket<T, PORT> {
     conditional_t<is_same_v<IPv4, IPv4>, sockaddr_in, sockaddr_in6> addr;
     socklen_t addr_len;
 

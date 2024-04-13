@@ -12,6 +12,8 @@ dserver:
 	g++ -std=c++20 -g -DSERVER -DDEBUG -o bin/server src/main.cpp
 release:
 	g++ -std=c++20 -O3 -o bin/net_api src/main.cpp
+debug:
+	gdb -tui ./bin/test
 test : 
 	./bin/test
 run:

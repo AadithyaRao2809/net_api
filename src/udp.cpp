@@ -1,20 +1,15 @@
 #include "sock.cpp"
+#include <iostream>
 #include <iterator>
-
 
 using namespace net;
 template <IP T, int PORT>
-class UDPSocket : public Socket<T, PORT>{
+class UDPSocket : public Socket<T, PORT> {
 
-    public:
-    UDPSocket(T ip) : Socket<T, PORT>(ip) {
+  public:
+    UDPSocket(T ip) : Socket<T, PORT>(ip) { this->createSocket(); }
 
-        this->createSocket();
-    }
-
-    int protocol() {
-        return SOCK_DGRAM;
-    }
+    int protocol() { return SOCK_DGRAM; }
 };
 
 template <IP T, int PORT>
@@ -26,7 +21,7 @@ class UDPServer : public UDPSocket<T, PORT> {
     struct sockaddr_in *client_addrin_ptr;
     socklen_t client_addr_len;
 
-    // recvfrom() 
+    // recvfrom()
     int read() {
         recv_str.resize(1024);
         int n = ::recvfrom(this->socket_fd, recv_str.data(), recv_str.size(), 0, &client_addr, &client_addr_len);
@@ -47,8 +42,9 @@ class UDPServer : public UDPSocket<T, PORT> {
 
     public:
 
+  public:
     UDPServer(T ip) : UDPSocket<T, PORT>(ip) {
-    if (bind(this->socket_fd, (struct sockaddr *)&this->servaddr, sizeof(this->servaddr)) ==
+        if (bind(this->socket_fd, (struct sockaddr *)&this->servaddr, sizeof(this->servaddr)) ==
             -1) {
             perror("Bind failed");
             throw runtime_error("Socket bind failed");
@@ -60,10 +56,10 @@ class UDPServer : public UDPSocket<T, PORT> {
         int n = read();
         debug("Client: " + recv_str);
 
-        if (client_addr.sa_family == AF_INET)
-         client_addrin_ptr = (struct sockaddr_in *)&client_addr;
-         char *ip = inet_ntoa(client_addrin_ptr->sin_addr);
-         std::cout << "Client IP Address is: " << ip << std::endl;
+            if (client_addr.sa_family == AF_INET)
+                client_addrin_ptr = (struct sockaddr_in *)&client_addr;
+            char *ip = inet_ntoa(client_addrin_ptr->sin_addr);
+            std::cout << "Client IP Address is: " << ip << std::endl;
         }
     }
 
