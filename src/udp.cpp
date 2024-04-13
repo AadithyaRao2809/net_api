@@ -101,6 +101,19 @@ class UDPClient : UDPSocket<T, PORT>{
         debug("Writing to server");
         return n;
     }
-    UDPClient(T ip) : UDPSocket<T, PORT>(ip) {}
+    UDPClient(T ip) : UDPSocket<T, PORT>(ip) {
+        if(is_same_v<T, IPv4>){
+            server_addr_len = sizeof(struct sockaddr_in);
+            ((struct sockaddr_in *)&server_addr)->sin_family = AF_INET;
+            ((struct sockaddr_in *)&server_addr)->sin_port = htons(PORT);
+            ((struct sockaddr_in *)&server_addr)->sin_addr.s_addr = ip.address;
+        }
+        else{
+            server_addr_len = sizeof(struct sockaddr_in6);
+            ((struct sockaddr_in6 *)&server_addr)->sin6_family = AF_INET6;
+            ((struct sockaddr_in6 *)&server_addr)->sin6_port = htons(PORT);
+            memcpy(&((struct sockaddr_in6 *)&server_addr)->sin6_addr, &ip.address, sizeof(ip.address));
+        }
+    }
 
 };
