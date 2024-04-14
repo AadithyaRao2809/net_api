@@ -7,7 +7,6 @@
 #include <string>
 #include <sys/socket.h>
 #include <unistd.h>
-#include <unordered_map>
 
 #include "debug.cpp"
 #include "map.cpp"
@@ -21,7 +20,6 @@ class HTTPServer {
 
     string res_header;
     string res_body;
-    // FIX: Remove std implementation
     UnorderedMap<string, string> res_headers;
     UnorderedMap<string, string> req_headers;
 

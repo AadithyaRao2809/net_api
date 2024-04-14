@@ -2,22 +2,20 @@
 #include "sock.cpp"
 #define TCP_F
 
-
+namespace net {
 using namespace net;
+
+template <typename T>
+class Server;
+
 template <IP T, int PORT>
-class TCPSocket :public Socket<T,PORT>{
+class TCPSocket : public Socket<T, PORT> {
 
-    public:
-    TCPSocket(T ip) : Socket<T, PORT>(ip) {this->createSocket();}
+  public:
+    TCPSocket(T ip) : Socket<T, PORT>(ip) { this->createSocket(); }
 
-    int protocol() {
-        return SOCK_STREAM;
-    }
-
-
+    int protocol() { return SOCK_STREAM; }
 };
-
-
 
 template <IP T, int PORT>
 class TCPServer : public TCPSocket<T, PORT> {
@@ -25,8 +23,9 @@ class TCPServer : public TCPSocket<T, PORT> {
     struct sockaddr addr;
     socklen_t addr_len;
 
-  protected:
+    friend class Server<TCPServer<T, PORT>>;
 
+  protected:
   public:
     string send_str;
     string recv_str;
@@ -114,7 +113,8 @@ class TCPClient : public TCPSocket<T, PORT> {
 
     int connect() {
         int err;
-        if ((err = ::connect(this->socket_fd, (struct sockaddr *)&this->servaddr, sizeof(this->servaddr))) < 0) {
+        if ((err = ::connect(this->socket_fd, (struct sockaddr *)&this->servaddr,
+                             sizeof(this->servaddr))) < 0) {
             debug("Error connecting to server");
         } else {
             debug("Connected to server");
@@ -145,5 +145,32 @@ class TCPClient : public TCPSocket<T, PORT> {
     }
 };
 
+template <typename T>
+class Server {
+    T server;
+
+  public:
+    Server() : server(T()) {
+        server.client_fd = -1;
+        debug(server.client_fd);
+    }
+    Server(T ip) : server(ip) {
+        server.client_fd = -1;
+        debug(server.client_fd);
+    }
+    void start() {
+        server.listen();
+        while (1) {
+            int client_fd = server.accept();
+            string request = server.getRequest();
+            debug("Request: ", request);
+            server.setResponse(
+                "HTTP/1.0 200 OK\r\nContent-Type: text/html\r\n\r\n<h1>Hello, World!</h1>");
+            debug("Response: ", server.send_str);
+        }
+    }
+};
+
+} // namespace net
 
 #endif
