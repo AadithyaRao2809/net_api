@@ -15,8 +15,8 @@
 using namespace std;
 using namespace net;
 
-int main() {
-    #ifdef SERVER
+int main(int argc, char **argv) {
+/*     #ifdef SERVER
     IPv4 ip1;
     try {
         // TCPServer<IPv6, 8080> server(ip2);
@@ -28,8 +28,11 @@ int main() {
     }
     #endif
     #ifndef SERVER
-    string ip_str;
-    cin >> ip_str;
+    if(argc < 2){
+        cout << "Usage: " << argv[0] << " <ip>" << endl;
+        return 1;
+    }
+    string ip_str(argv[1]);
     debug("IP: " + ip_str);
     IPv4 ip2(ip_str);
     try{
@@ -41,5 +44,9 @@ int main() {
     }
     #endif
     return 0;
-
+ */
+    IPv4 ip1;
+    HTTPServer<IPv4, 8080> server(ip1);
+    server.startServer("./test");
+    return 0;
 }

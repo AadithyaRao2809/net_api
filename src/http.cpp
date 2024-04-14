@@ -32,7 +32,8 @@ class HTTPServer {
         return *this;
     }
 
-    int setStatusCode(int code) {
+    // set the correct header according to the status code
+    int setStatusCode(int code) { 
         switch (code) {
         case 200:
             res_headers.insert("ver", "HTTP/1.0 200 OK\r\n");
@@ -49,12 +50,18 @@ class HTTPServer {
         return 0;
     }
 
+    // calculate the content length and set the content type
     int setContent(string content) {
         res_headers.insert("Content-Type", "text/html");
+        res_headers.insert("Content-Length", to_string(content.size()));
         res_header = res_headers["ver"];
 
         Node<string, string> *temp = res_headers.getElements();
         while (temp != nullptr) {
+            if (temp->key == "ver") {
+                temp = temp->next;
+                continue;
+            }
             res_header += temp->key + ": " + temp->value + "\r\n";
             temp = temp->next;
         }
@@ -64,16 +71,15 @@ class HTTPServer {
         return 0;
     }
 
-    int addRoute(string path, void (*callback)()) { return 0; }
 
+
+    // parse the header and store it in an unordered_map
     UnorderedMap<std::string, std::string> parseHeader(const std::string &header) {
         UnorderedMap<std::string, std::string> headers;
 
         size_t pos = 0;
-        // Find the end of the first line
         size_t endOfFirstLine = header.find("\r\n");
         if (endOfFirstLine == std::string::npos) {
-            // Invalid header format, first line not found
             return headers;
         }
 
@@ -82,17 +88,14 @@ class HTTPServer {
         // Find the position of the first space to separate method and path
         size_t firstSpacePos = firstLine.find(' ');
         if (firstSpacePos == std::string::npos) {
-            // Invalid header format, first line doesn't contain expected separators
             return headers;
         }
 
         // Extract method
         std::string method = firstLine.substr(0, firstSpacePos);
 
-        // Find the position of the second space to separate path and HTTP version
         size_t secondSpacePos = firstLine.find(' ', firstSpacePos + 1);
         if (secondSpacePos == std::string::npos) {
-            // Invalid header format, first line doesn't contain expected separators
             return headers;
         }
 
@@ -107,9 +110,9 @@ class HTTPServer {
         headers.insert("Path", path);
         headers.insert("HTTPVersion", httpVersion);
 
-        // Now parse the rest of the headers
-        pos = endOfFirstLine + 2; // Move past the first line (\r\n)
+        pos = endOfFirstLine + 2; 
 
+        // parse the rest of the header
         while (pos < header.size()) {
             size_t colonPos = header.find(':', pos);
             if (colonPos == std::string::npos) {
@@ -148,6 +151,7 @@ class HTTPServer {
     }
     int close() { return server.close(); }
 
+    // create a prebuilt server
     int startServer(const string root_dir = ".") {
         listen();
         while (1) {
@@ -190,13 +194,7 @@ class HTTPServer {
     ~HTTPServer() { close(); }
 };
 
-template <IP T, int PORT = 80>
-class HTTPClient {
-    TCPClient<T, PORT> client;
-    string req_header;
-    string res_header;
-    string res_body;
-};
+
 
 } // namespace net
 #endif
