@@ -1,6 +1,7 @@
 #ifndef DEBUG_F
 
 #include <string>
+#include <iostream>
 
 #define DEBUG_F
 

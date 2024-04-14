@@ -107,15 +107,28 @@ class TCPClient : public TCPSocket<T, PORT> {
     socklen_t addr_len;
 
   public:
-    string buffer;
+    string send_str;
+    string recv_str;
 
-    TCPClient(T ip) : Socket<T, PORT>(ip) {}
+    TCPClient(T ip) : TCPSocket<T, PORT>(ip) {}
+
+    int connect() {
+        int err;
+        if ((err = ::connect(this->socket_fd, (struct sockaddr *)&this->servaddr, sizeof(this->servaddr))) < 0) {
+            debug("Error connecting to server");
+        } else {
+            debug("Connected to server");
+        }
+        return err;
+    }
 
     int read() {
         int bytes;
-        if ((bytes = ::recv(this->socket_fd, buffer.data(), buffer.size() + 1, 0)) < 0) {
+        recv_str.resize(1024);
+        if ((bytes = ::recv(this->socket_fd, recv_str.data(), recv_str.size() + 1, 0)) < 0) {
             debug("Error reading from server");
         } else {
+            recv_str.resize(bytes);
             debug("Read from server", bytes, "bytes");
         }
         return bytes;
@@ -123,7 +136,7 @@ class TCPClient : public TCPSocket<T, PORT> {
 
     int write() {
         int bytes;
-        if ((bytes = ::send(this->socket_fd, buffer.data(), buffer.size() + 1, 0)) < 0) {
+        if ((bytes = ::send(this->socket_fd, send_str.data(), send_str.size() + 1, 0)) < 0) {
             debug("Error writing to server");
         } else {
             debug("Wrote to server", bytes, "bytes");
