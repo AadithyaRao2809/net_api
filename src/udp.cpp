@@ -1,8 +1,14 @@
+#ifndef UDP_F
 #include "sock.cpp"
 #include <iostream>
-#include <iterator>
 
+#define UDP_F
 using namespace net;
+namespace net {
+
+template <typename T>
+class Server;
+
 template <IP T, int PORT>
 class UDPSocket : public Socket<T, PORT> {
 
@@ -19,6 +25,7 @@ class UDPServer : public UDPSocket<T, PORT> {
     struct sockaddr client_addr;
     struct sockaddr_in *client_addrin_ptr;
     socklen_t client_addr_len = sizeof(client_addr);
+    friend class Server<UDPServer<T, PORT>>;
 
     //Server function to read messages from the client
     int read() {
@@ -158,3 +165,5 @@ class UDPClient : UDPSocket<T, PORT> {
         }
     }
 };
+} // namespace net
+#endif
