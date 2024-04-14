@@ -62,12 +62,12 @@ class TCPServer : public TCPSocket<T, PORT> {
     }
 
     int read() {
+        recv_str.resize(1024);
         int bytes;
-        char temp[1024];
-        if ((bytes = ::recv(client_fd, temp, 1024, 0)) < 0) {
+        if ((bytes = ::recv(client_fd, recv_str.data(), 1024, 0)) < 0) {
             debug("Error reading from client");
         } else {
-            recv_str = temp;
+            recv_str.resize(bytes);
             debug("Read from client", bytes);
         }
         return bytes;

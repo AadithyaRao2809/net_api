@@ -68,7 +68,7 @@ class IPv6 {
         for (int i = 0; i < 16; i++)
             this->address.bytes[i] = addr.s6_addr[i];
     }
-    template <Integral... T>
+    template <Integral... T> requires(sizeof...(T) == 16 || sizeof...(T) == 8 || sizeof...(T) == 4)
     IPv6(T... args) {
         const int temp[] = {args...};
         int i = 0;

@@ -6,7 +6,12 @@
 namespace net {
 template <typename T>
 class Server {
-    T server;
+};
+
+
+template <IP T, int PORT>
+class Server<TCPServer<T,PORT>> {
+    TCPServer<T,PORT> server;
 
   public:
     Server(auto ip) : server(T(ip)) {
@@ -16,10 +21,11 @@ class Server {
         while (1) {
             server.accept();
             server.read();
-            server.write(server.getRequest());
+            // send_str is private 
+            server.send_str = "Hello from server";
+            server.write();
             server.close();
 
-            debug("Response: ", server.getRequest());
         }
     }
 };
