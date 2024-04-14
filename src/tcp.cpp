@@ -158,13 +158,10 @@ class Server {
         while (1) {
             server.accept();
             server.read();
-            string request = server.getRequest();
-            server.setResponse(
-                "HTTP/1.0 200 OK\r\nContent-Type: text/html\r\n\r\n<h1>Hello, World!</h1>");
-            server.write();
+            server.write(server.getRequest());
             server.close();
 
-            debug("Response: ", server.send_str);
+            debug("Response: ", server.getRequest());
         }
     }
 };
