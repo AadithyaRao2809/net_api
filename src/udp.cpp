@@ -18,9 +18,9 @@ class UDPServer : public UDPSocket<T, PORT> {
     string recv_str;
     struct sockaddr client_addr;
     struct sockaddr_in *client_addrin_ptr;
-    socklen_t client_addr_len;
+    socklen_t client_addr_len = sizeof(client_addr);
 
-    // recvfrom()
+    //Server function to read messages from the client
     int read() {
         recv_str.resize(1024);
         int n = ::recvfrom(this->socket_fd, recv_str.data(), recv_str.size(), 0, &client_addr,
@@ -30,12 +30,14 @@ class UDPServer : public UDPSocket<T, PORT> {
             recv_str.resize(n);
         return n;
     }
+    //Server function to write messages to the client, with a response
     int write(string response) {
         int n = ::sendto(this->socket_fd, response.data(), response.size(), 0, &client_addr,
                          client_addr_len);
         debug("Writing to client");
         return n;
     }
+    // Server function to write default messages to the client
     int write() {
         int n = ::sendto(this->socket_fd, send_str.data(), send_str.size(), 0, &client_addr,
                          client_addr_len);
@@ -45,7 +47,40 @@ class UDPServer : public UDPSocket<T, PORT> {
 
     public:
 
-  public:
+    void startServer(){
+        while(1){
+            string response;
+            int n = read();                 //Waiting for a read from the client
+
+            if(n < 0) {
+                debug("Error reading from client");
+                return;
+            }
+            cout << "Client: " << recv_str << endl;
+            /*Can include type traits here*/
+            if (client_addr.sa_family == AF_INET)  {                     // Getting the IP address of the client for IPv4
+            client_addrin_ptr = (struct sockaddr_in *)&client_addr;
+            char *ip = inet_ntoa(client_addrin_ptr->sin_addr);
+            std::cout << "Client IP Address is: " << ip << std::endl;
+            }
+            else if(client_addr.sa_family == AF_INET6)              // Getting the IP address of the client for IPv6
+            {
+                char ip[INET6_ADDRSTRLEN];
+                inet_ntop(AF_INET6, &((struct sockaddr_in6 *)&client_addr)->sin6_addr, ip, INET6_ADDRSTRLEN);
+                std::cout << "Client IP Address is: " << ip << std::endl;
+            }
+            else
+            {
+                std::cout << "Unknown address family" << std::endl;
+            }
+
+
+            cout << "Enter the message to send: ";      // Sending a message to the client
+            getline(cin, response);
+            send_str = response;
+            write();
+        }
+    }
     UDPServer(T ip) : UDPSocket<T, PORT>(ip) {
         if (bind(this->socket_fd, (struct sockaddr *)&this->servaddr, sizeof(this->servaddr)) ==
             -1) {
@@ -53,17 +88,6 @@ class UDPServer : public UDPSocket<T, PORT> {
             throw runtime_error("Socket bind failed");
         }
         debug("Socket bound");
-
-        while (1) {
-            debug("Waiting for client");
-            int n = read();
-            debug("Client: " + recv_str);
-
-            /* if (client_addr.sa_family == AF_INET)
-                client_addrin_ptr = (struct sockaddr_in *)&client_addr;
-            char *ip = inet_ntoa(client_addrin_ptr->sin_addr);
-            std::cout << "Client IP Address is: " << ip << std::endl; */
-        }
     }
 };
 
@@ -71,12 +95,13 @@ template <IP T, int PORT>
 class UDPClient : UDPSocket<T, PORT> {
 
     struct sockaddr server_addr;
-    socklen_t server_addr_len;
+    socklen_t server_addr_len = sizeof(server_addr);
     string send_str;
     string recv_str;
 
-  public:
-    int read() {
+    public:
+    //Client function that waits for a message from the server
+    int read(){
         recv_str.resize(1024);
         debug("Reading from server");
         int n = ::recvfrom(this->socket_fd, recv_str.data(), recv_str.size(), 0, &server_addr,
@@ -85,7 +110,9 @@ class UDPClient : UDPSocket<T, PORT> {
             recv_str.resize(n);
         return n;
     }
-    int write(string response) {
+
+    //Client function that writes a message to the Server, with a response
+    int write(string response){
         debug("Response: " + response);
         int n = ::sendto(this->socket_fd, response.data(), response.size(), 0, &server_addr,
                          server_addr_len);
@@ -96,11 +123,25 @@ class UDPClient : UDPSocket<T, PORT> {
         debug("Writing to server");
         return n;
     }
-    int write() {
-        int n = ::sendto(this->socket_fd, send_str.data(), send_str.size(), 0, &server_addr,
-                         server_addr_len);
+    //Client function that writes a default message to the Server
+    int write(){
+        int n = ::sendto(this->socket_fd, send_str.data(), send_str.size(), 0, &server_addr, server_addr_len);
         debug("Writing to server");
         return n;
+    }
+
+    // Client function to send and receive messages
+    void startClient(){
+        while(1){
+            string response;
+            cout << "Enter the message to send: ";
+            getline(cin, response);
+            send_str = response;
+            write();
+            read();
+            cout << "Server: " << recv_str << endl;
+            
+        }
     }
     UDPClient(T ip) : UDPSocket<T, PORT>(ip) {
         if (is_same_v<T, IPv4>) {

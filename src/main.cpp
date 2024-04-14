@@ -19,23 +19,21 @@ int main(int argc, char **argv) {
     try {
         // TCPServer<IPv6, 8080> server(ip2);
        UDPServer<IPv4, 8080> server(ip1);
-    
+        server.startServer();
 
     } catch (const exception &e) {
         cout << e.what() << endl;
     }
     #endif
     #ifndef SERVER
-    if(argc < 2){
-        cout << "Usage: " << argv[0] << " <ip>" << endl;
-        return 1;
-    }
-    string ip_str(argv[1]);
+    string ip_str;
+    cout << "Enter the IP address of the server: " << endl;
+    cin >> ip_str;
     debug("IP: " + ip_str);
     IPv4 ip2(ip_str);
     try{
         UDPClient<IPv4, 8080> client(ip2);
-        client.write("Hello from client");
+        client.startClient();
     }
     catch(const exception &e){
         cout << e.what() << endl;
