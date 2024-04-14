@@ -1,3 +1,4 @@
+#include <string>
 #ifndef TCP_F
 #include "sock.cpp"
 #define TCP_F
@@ -150,22 +151,19 @@ class Server {
     T server;
 
   public:
-    Server() : server(T()) {
-        server.client_fd = -1;
-        debug(server.client_fd);
-    }
-    Server(T ip) : server(ip) {
-        server.client_fd = -1;
-        debug(server.client_fd);
+    Server(auto ip) : server(T(ip)) {
     }
     void start() {
         server.listen();
         while (1) {
-            int client_fd = server.accept();
+            server.accept();
+            server.read();
             string request = server.getRequest();
-            debug("Request: ", request);
             server.setResponse(
                 "HTTP/1.0 200 OK\r\nContent-Type: text/html\r\n\r\n<h1>Hello, World!</h1>");
+            server.write();
+            server.close();
+
             debug("Response: ", server.send_str);
         }
     }
