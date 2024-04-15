@@ -13,13 +13,15 @@
 using namespace std;
 using namespace net;
 
-auto startServer = []<typename T>(auto ip) {
-    Server<T> server(ip);
+template <typename ServerType, typename IPType>
+auto startServer = [](IPType ip) {
+    Server<ServerType> server(ip);
     server.start();
 };
+
 int main(int argc, char **argv) {
+   
+   
     IPv4 ip("localhost");
-    startServer<HTTPServer<IPv4,8080>>(ip);
-
-
+    startServer<HTTPServer<IPv4, 8080>, IPv4>(ip);
 }
