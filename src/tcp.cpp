@@ -6,7 +6,7 @@
 namespace net {
 using namespace net;
 
-template <typename T>
+template <typename T>                       //Declaring the server class so Server<TCPServer<T, PORT> can be a friend class
 class Server;
 
 template <IP T, int PORT>
@@ -24,12 +24,15 @@ class TCPServer : public TCPSocket<T, PORT> {
     struct sockaddr addr;
     socklen_t addr_len;
 
-    friend class Server<TCPServer<T, PORT>>;
+    friend class Server<TCPServer<T, PORT>>;                   //Friend class declaration
 
   protected:
   public:
     string send_str;
     string recv_str;
+
+    // Constructor to create a TCP server
+
     TCPServer(T ip) : TCPSocket<T, PORT>(ip) {
         if (bind(this->socket_fd, (struct sockaddr *)&this->servaddr, sizeof(this->servaddr)) ==
             -1) {
@@ -38,6 +41,7 @@ class TCPServer : public TCPSocket<T, PORT> {
         }
         debug("Socket bound");
     }
+    // Function to accept a client connection
     int accept() {
         int err;
         if ((client_fd = ::accept(this->socket_fd, &addr, &addr_len)) < 0) {
@@ -48,9 +52,14 @@ class TCPServer : public TCPSocket<T, PORT> {
         return client_fd;
     }
 
+    // Function to get the request from the client
     string getRequest() { return string(recv_str); }
+
+    // Function to set the response to the client
     void setResponse(string response) { send_str = response; }
 
+
+    // Function to listen for incoming connections
     int listen() {
         int err;
         if ((err = ::listen(this->socket_fd, 5)) < 0) {
@@ -61,6 +70,7 @@ class TCPServer : public TCPSocket<T, PORT> {
         return err;
     }
 
+    // Function to read from the client
     int read() {
         recv_str.resize(1024);
         int bytes;
@@ -72,6 +82,8 @@ class TCPServer : public TCPSocket<T, PORT> {
         }
         return bytes;
     }
+
+    //  Function to write to the client with an argument
     int write(string response) {
         int err;
         if ((err = ::send(client_fd, response.data(), response.size(), 0)) < 0) {
@@ -81,6 +93,7 @@ class TCPServer : public TCPSocket<T, PORT> {
         }
         return err;
     }
+    // Function to write to the client
     int write() {
         int err;
         if ((err = ::send(client_fd, send_str.data(), send_str.size(), 0)) < 0) {
@@ -90,6 +103,8 @@ class TCPServer : public TCPSocket<T, PORT> {
         }
         return err;
     }
+
+    // Function to close the client connection
     int close() {
         int err;
         if ((err = ::close(client_fd)) < 0) {
@@ -103,7 +118,7 @@ class TCPServer : public TCPSocket<T, PORT> {
 
 template <IP T, int PORT>
 class TCPClient : public TCPSocket<T, PORT> {
-    conditional_t<is_same_v<IPv4, IPv4>, sockaddr_in, sockaddr_in6> addr;
+    conditional_t<is_same_v<IPv4, IPv4>, sockaddr_in, sockaddr_in6> addr;               // Type trait to assign the correct sockaddr structure based on the IP type
     socklen_t addr_len;
 
   public:
@@ -112,6 +127,7 @@ class TCPClient : public TCPSocket<T, PORT> {
 
     TCPClient(T ip) : TCPSocket<T, PORT>(ip) {}
 
+    // Function to connect to the server
     int connect() {
         int err;
         if ((err = ::connect(this->socket_fd, (struct sockaddr *)&this->servaddr,
@@ -123,6 +139,8 @@ class TCPClient : public TCPSocket<T, PORT> {
         return err;
     }
 
+
+    // Function to read from the server
     int read() {
         int bytes;
         recv_str.resize(1024);
@@ -135,6 +153,8 @@ class TCPClient : public TCPSocket<T, PORT> {
         return bytes;
     }
 
+
+    // Function to write to the server
     int write() {
         int bytes;
         if ((bytes = ::send(this->socket_fd, send_str.data(), send_str.size() + 1, 0)) < 0) {
@@ -159,7 +179,7 @@ class Server<TCPServer<T,PORT>> {
             server.accept();
             server.read();
             // send_str is private 
-            server.send_str = "Hello from server";
+            server.send_str = "Hello from server";              // Default, can be changed with setResponse
             server.write();
             server.close();
         }

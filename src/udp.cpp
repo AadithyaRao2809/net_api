@@ -150,6 +150,8 @@ class UDPClient : UDPSocket<T, PORT> {
             
         }
     }
+
+    // Client constructor
     UDPClient(T ip) : UDPSocket<T, PORT>(ip) {
         if (is_same_v<T, IPv4>) {
             server_addr_len = sizeof(struct sockaddr_in);
@@ -177,7 +179,7 @@ class Server<UDPServer<T,PORT>> {
         while (1) {
             server.read();
             // send_str is private 
-            server.send_str = "Hello from server";
+            server.send_str = "Hello from server\n";
             server.write();
         }
     }

@@ -14,7 +14,7 @@
 
 namespace net {
 
-struct Header {
+struct Header {                               // Header struct to store key value pairs of headers
     string key;
     string value;
     Header(string key, string value) : key(key), value(value) {}
@@ -26,11 +26,11 @@ struct Header {
 };
 
 
-template <typename T>
+template <typename T>   //Server Declaration so it can be recognized by HTTPServer as a friend class
 class Server;
 
 template <typename T>
-concept HeaderType = is_same_v<T, Header>;
+concept HeaderType = is_same_v<T, Header>; 
 
 template <IP T, int PORT = 80>
 class HTTPServer {

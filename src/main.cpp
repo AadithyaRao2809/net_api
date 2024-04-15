@@ -19,5 +19,5 @@ int main(int argc, char **argv) {
    
    
     IPv4 ip("localhost");
-    startServer<HTTPServer<IPv4, 8080>, IPv4>(ip);
+    startServer<UDPServer<IPv4, 8080>, IPv4>(ip);
 }
