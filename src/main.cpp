@@ -6,14 +6,20 @@
 
 #include "tcp.cpp"
 #include "udp.cpp"
+#include "http.cpp"
 
 
 
 using namespace std;
 using namespace net;
 
+auto startServer = []<typename T>(auto ip) {
+    Server<T> server(ip);
+    server.start();
+};
 int main(int argc, char **argv) {
     IPv4 ip("localhost");
-    Server<UDPServer<IPv4, 8080>> server(ip);
-    server.start();
+    startServer<HTTPServer<IPv4,8080>>(ip);
+
+
 }
