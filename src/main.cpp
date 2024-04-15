@@ -5,6 +5,7 @@
 #include <unistd.h>
 
 #include "tcp.cpp"
+#include "udp.cpp"
 
 
 
@@ -13,6 +14,6 @@ using namespace net;
 
 int main(int argc, char **argv) {
     IPv4 ip("localhost");
-    Server<TCPServer<IPv4, 8080>> server(ip);
+    Server<UDPServer<IPv4, 8080>> server(ip);
     server.start();
 }

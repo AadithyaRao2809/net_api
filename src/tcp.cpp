@@ -146,6 +146,25 @@ class TCPClient : public TCPSocket<T, PORT> {
     }
 };
 
+template <IP T, int PORT>
+class Server<TCPServer<T,PORT>> {
+    TCPServer<T,PORT> server;
+
+  public:
+    Server(auto ip) : server(T(ip)) {
+    }
+    void start() {
+        server.listen();
+        while (1) {
+            server.accept();
+            server.read();
+            // send_str is private 
+            server.send_str = "Hello from server";
+            server.write();
+            server.close();
+        }
+    }
+};
 
 } // namespace net
 

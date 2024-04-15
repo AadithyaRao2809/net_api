@@ -5,6 +5,7 @@
 
 #define DEBUG_F
 
+//pritns debug messages with line no and file name
 template <typename... T>
 void debug_log(std::string file, int line, T... args) {
 #ifdef DEBUG

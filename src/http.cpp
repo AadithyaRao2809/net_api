@@ -13,6 +13,9 @@
 #include "tcp.cpp"
 
 namespace net {
+template <typename T>
+class Server;
+
 template <IP T, int PORT = 80>
 class HTTPServer {
 
@@ -22,6 +25,8 @@ class HTTPServer {
     string res_body;
     UnorderedMap<string, string> res_headers;
     UnorderedMap<string, string> req_headers;
+    
+    friend class Server<HTTPServer<T, PORT>>;
 
   public:
     HTTPServer(T ip) : server(ip) {}
@@ -71,9 +76,10 @@ class HTTPServer {
 
 
 
-    // parse the header and store it in an unordered_map
+    // parse the header from request and store it in an unordered_map
     UnorderedMap<std::string, std::string> parseHeader(const std::string &header) {
         UnorderedMap<std::string, std::string> headers;
+
 
         size_t pos = 0;
         size_t endOfFirstLine = header.find("\r\n");
@@ -150,46 +156,53 @@ class HTTPServer {
     int close() { return server.close(); }
 
     // create a prebuilt server
-    int startServer(const string root_dir = ".") {
-        listen();
+
+    ~HTTPServer() { close(); }
+};
+
+template <IP T, int PORT>
+class Server<HTTPServer<T, PORT>> {
+    HTTPServer<T, PORT> server;
+
+  public:
+    Server(T ip) : server(ip) {}
+
+    void start(const string root_dir = ".") {
+        server.listen();
         while (1) {
-            int client_fd = accept();
+            int client_fd = server.accept();
 
-            read();
-            auto headers = parseHeader();
-
-
+            server.read();
+            auto headers = server.parseHeader();
 
 
-
-            if (headers["Path"] == "/") {
+            if (headers["Path"] == "/") { // sets base path as index.html
                 headers.insert("Path", "/index.html");
             }
             string path = root_dir + headers["Path"];
             debug("\t Path:", path);
             int fd = open(path.c_str(), O_RDONLY);
             if (fd < 0) {
+                // file not found
                 debug("File not found");
-                setStatusCode(404);
-                setContent("<h1>404 Not Found</h1>");
+                server.setStatusCode(404);
+                server.setContent("<h1>404 Not Found</h1>");
             } else {
-                setStatusCode(200);
+                // read file into string
+                server.setStatusCode(200);
                 char buffer[1024];
                 int n;
                 string content;
                 while ((n = ::read(fd, buffer, 1024)) > 0) {
                     content += string(buffer, n);
                 }
-                setContent(content);
+                server.setContent(content);
             }
-            write();
-            ::close(client_fd);
+            server.write();
+            server.close();
 
         }
-        return 0;
     }
-
-    ~HTTPServer() { close(); }
 };
 
 

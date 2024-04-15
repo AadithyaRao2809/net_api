@@ -58,7 +58,6 @@ class IPv6 {
         if (address == "localhost") {
             for (int i = 0; i < 16; i++)
                 this->address.bytes[i] = 0;
-            this->address.word[5] = 0;
             return;
         }
         struct in6_addr addr;
@@ -68,7 +67,8 @@ class IPv6 {
         for (int i = 0; i < 16; i++)
             this->address.bytes[i] = addr.s6_addr[i];
     }
-    template <Integral... T> requires(sizeof...(T) == 16 || sizeof...(T) == 8 || sizeof...(T) == 4)
+    // assigns ip address based on the number of arguments
+    template <Integral... T> 
     IPv6(T... args) {
         const int temp[] = {args...};
         int i = 0;

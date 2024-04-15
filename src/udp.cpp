@@ -165,5 +165,23 @@ class UDPClient : UDPSocket<T, PORT> {
         }
     }
 };
+
+template <IP T, int PORT>
+class Server<UDPServer<T,PORT>> {
+    UDPServer<T,PORT> server;
+
+  public:
+    Server(auto ip) : server(T(ip)) {
+    }
+    void start() {
+        while (1) {
+            server.read();
+            // send_str is private 
+            server.send_str = "Hello from server";
+            server.write();
+        }
+    }
+};
+
 } // namespace net
 #endif

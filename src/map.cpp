@@ -28,7 +28,6 @@ class UnorderedMap {
     int size;
 
     // Hash function for types other than string,casts to int for functionality
-    int hash(K key) { return (int)(key % num_buckets); }
 
     void rehash() {
         Node<K, V> **old_buckets = buckets;
@@ -89,6 +88,7 @@ class UnorderedMap {
         buckets[index] = node;
     }
 
+    // returns all elements in the map in a linked list
     Node<K, V> *getElements() {
         Node<K, V> *all_elements = nullptr; // Head of the linked list
 
@@ -97,12 +97,9 @@ class UnorderedMap {
             Node<K, V> *node = buckets[i];
             // Traverse each chain in the bucket
             while (node) {
-                // Create a new node for the linked list
                 Node<K, V> *new_node = new Node<K, V>(node->key, node->value);
-                // Insert the new node at the beginning of the linked list
                 new_node->next = all_elements;
                 all_elements = new_node;
-                // Move to the next node in the chain
                 node = node->next;
             }
         }
@@ -152,14 +149,6 @@ class UnorderedMap<std::string, V> {
     int num_buckets;
     int size;
 
-    // string hash function
-    int hash(std::string key) {
-        int hash = 0;
-        for (char c : key) {
-            hash = hash * 31 + c;
-        }
-        return hash % num_buckets;
-    }
 
     void rehash() {
         Node<std::string, V> **old_buckets = buckets;
@@ -270,6 +259,7 @@ class UnorderedMap<std::string, V> {
         }
         size = 0;
     }
+
     void erase(std::string key) {
         int index = std::hash<std::string>{}(key) % num_buckets;
         Node<std::string, V> *node = buckets[index];
