@@ -17,6 +17,12 @@ class Server {
 
 };
 
+template <typename ServerType, typename IPType>
+auto startServer = [](IPType ip) {
+    Server<ServerType> server(ip);
+    server.start();
+};
+
 } // namespace net
 
 #endif
