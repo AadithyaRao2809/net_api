@@ -6,6 +6,9 @@ dev:
 tcp:
 	g++ -std=c++20 -g -DDEBUG -o bin/tcpServer test/tcpServer.cpp
 	g++ -std=c++20 -g -DDEBUG -o bin/tcpClient test/tcpClient.cpp
+udp:
+	g++ -std=c++20 -g -DDEBUG -o bin/udpServer test/udpServer.cpp
+	g++ -std=c++20 -g -DDEBUG -o bin/udpClient test/udpClient.cpp
 release:
 	g++ -std=c++20 -O3 -o bin/net_api src/main.cpp
 debug:

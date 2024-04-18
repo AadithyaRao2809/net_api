@@ -27,6 +27,16 @@ class UDPServer : public UDPSocket<T, PORT> {
     socklen_t client_addr_len = sizeof(client_addr);
     friend class Server<UDPServer<T, PORT>>;
 
+    public:
+
+
+    void setResponse(string response){
+        send_str = response;
+    }
+
+    string getRequest(){
+        return recv_str;
+    }
     //Server function to read messages from the client
     int read() {
         recv_str.resize(1024);
@@ -52,7 +62,6 @@ class UDPServer : public UDPSocket<T, PORT> {
         return n;
     }
 
-    public:
 
     void startServer(){
         while(1){
@@ -107,6 +116,14 @@ class UDPClient : UDPSocket<T, PORT> {
     string recv_str;
 
     public:
+
+    void setRequest(string request){
+        send_str = request;
+    }
+
+    string getResponse(){
+        return recv_str;
+    }
     //Client function that waits for a message from the server
     int read(){
         recv_str.resize(1024);
@@ -138,18 +155,7 @@ class UDPClient : UDPSocket<T, PORT> {
     }
 
     // Client function to send and receive messages
-    void startClient(){
-        while(1){
-            string response;
-            cout << "Enter the message to send: ";
-            getline(cin, response);
-            send_str = response;
-            write();
-            read();
-            cout << "Server: " << recv_str << endl;
-            
-        }
-    }
+
 
     // Client constructor
     UDPClient(T ip) : UDPSocket<T, PORT>(ip) {

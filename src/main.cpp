@@ -15,9 +15,15 @@ using namespace net;
 
 
 
+
 int main(int argc, char **argv) {
    
-   
+   try{
     IPv4 ip("localhost");
-    startServer<UDPServer<IPv4, 8080>, IPv4>(ip);
+    startServer<HTTPServer<IPv4, 8080>, IPv4>(ip);
+   }
+   catch(const std::exception& e){
+       cout << e.what() << endl;
+   }
+    return 0;
 }
